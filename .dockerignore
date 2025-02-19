@@ -1,0 +1,19 @@
+# Entornos virtuales
+.venv/
+venv/
+
+# Cache y archivos compilados
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Archivos de desarrollo
+.git/
+.env
+.env.*
+*.log
+.coverage
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db 

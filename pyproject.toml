@@ -1,0 +1,21 @@
+[project]
+name = "agente-pension"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "duckduckgo-search>=7.4.2",
+    "fastapi>=0.115.8",
+    "langchain>=0.3.19",
+    "langchain-community>=0.3.17",
+    "langchain-openai>=0.3.6",
+    "langchain-pinecone>=0.2.0",
+    "langgraph>=0.2.74",
+    "openai>=1.63.2",
+    "pinecone-client>=5.0.1",
+    "python-dotenv>=1.0.1",
+    "pytz>=2025.1",
+    "redis>=5.2.1",
+    "uvicorn>=0.34.0",
+]
