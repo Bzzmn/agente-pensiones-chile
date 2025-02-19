@@ -2,22 +2,20 @@
 
 # Variables
 VENV = .venv
-PYTHON = $(VENV)/bin/python
-UV = $(VENV)/bin/uv
 PORT = 8001
 
 # Crear entorno virtual e instalar dependencias
 install:
-	python -m venv $(VENV)
-	pip install uv
-	$(UV) pip install -e .
+	uv venv
+	. $(VENV)/bin/activate && uv pip install -e .
 
 # Ejecutar la aplicación en modo desarrollo
 run:
-	$(PYTHON) -m uvicorn src.main:app --reload --port $(PORT)
+	. $(VENV)/bin/activate && uvicorn src.main:app --reload --port $(PORT)
 
 # Limpiar archivos temporales y cache
 clean:
+	rm -rf $(VENV)
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type d -name "*.egg-info" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete

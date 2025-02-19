@@ -2,15 +2,17 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Instalar uv
-RUN pip install uv
+# Instalar uv globalmente
+RUN pip install --no-cache-dir uv
 
 # Copiar solo los archivos necesarios
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
 
-# Instalar dependencias usando uv con --system
-RUN uv pip install --system -e .
+# Instalar dependencias usando uv
+RUN uv venv /app/.venv && \
+    . /app/.venv/bin/activate && \
+    uv pip install -e .
 
 # Variables requeridas (documentación)
 ENV OPENAI_API_KEY=""
@@ -29,5 +31,15 @@ ENV PORT=8001
 # Exponer puerto
 EXPOSE ${PORT}
 
-# Validación de variables requeridas al inicio
-CMD ["sh", "-c", "[ -n \"$OPENAI_API_KEY\" ] && [ -n \"$OPENAI_EMBEDDING_API_KEY\" ] && [ -n \"$PINECONE_API_KEY\" ] && [ -n \"$REDIS_URL\" ] && uvicorn src.main:app --host 0.0.0.0 --port ${PORT}"] 
+# Validación de variables requeridas al inicio y ejecución usando el venv
+CMD ["sh", "-c", "\
+    echo 'Verificando variables de entorno...' && \
+    echo 'PINECONE_API_KEY=' && echo $PINECONE_API_KEY | cut -c1-10 && \
+    echo 'PINECONE_ENV=' && echo $PINECONE_ENV && \
+    echo 'PINECONE_INDEX_NAME=' && echo $PINECONE_INDEX_NAME && \
+    [ -n \"$OPENAI_API_KEY\" ] && \
+    [ -n \"$OPENAI_EMBEDDING_API_KEY\" ] && \
+    [ -n \"$PINECONE_API_KEY\" ] && \
+    [ -n \"$REDIS_URL\" ] && \
+    . /app/.venv/bin/activate && \
+    uvicorn src.main:app --host 0.0.0.0 --port ${PORT}"] 
