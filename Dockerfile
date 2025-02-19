@@ -26,14 +26,14 @@ ENV PINECONE_API_KEY=""
 ENV PINECONE_ENV=""
 ENV PINECONE_INDEX_NAME=""
 ENV CORS_ORIGINS=""
-ENV PORT=8001
-
+ENV PORT=80 
 # Exponer puerto
 EXPOSE ${PORT}
 
 # Validación de variables requeridas al inicio y ejecución usando el venv
 CMD ["sh", "-c", "\
     echo 'Verificando variables de entorno...' && \
+    echo 'Puerto configurado:' && echo $PORT && \
     echo 'PINECONE_API_KEY=' && echo $PINECONE_API_KEY | cut -c1-10 && \
     echo 'PINECONE_ENV=' && echo $PINECONE_ENV && \
     echo 'PINECONE_INDEX_NAME=' && echo $PINECONE_INDEX_NAME && \
