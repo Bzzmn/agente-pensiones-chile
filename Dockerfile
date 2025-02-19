@@ -15,7 +15,7 @@ RUN uv venv /app/.venv && \
     uv pip install -e .
 
 # Variables requeridas (documentación)
-ENV PORT=8001
+ENV PORT=80
 
 # Exponer puerto
 EXPOSE ${PORT}
