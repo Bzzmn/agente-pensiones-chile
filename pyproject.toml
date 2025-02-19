@@ -1,7 +1,7 @@
 [project]
 name = "agente-pension"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "Asistente virtual inteligente especializado en temas previsionales"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -17,5 +17,9 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "pytz>=2025.1",
     "redis>=5.2.1",
+    "tomli>=2.0.1",
     "uvicorn>=0.34.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/agente-pension"

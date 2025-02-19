@@ -6,14 +6,22 @@ def setup_cors():
     
     # Obtener y procesar los orígenes permitidos
     cors_env = os.getenv("CORS_ORIGINS", "")
+    
     try:
-        # Intentar parsear como JSON si comienza con [
+        # Limpiar la cadena de caracteres escapados
+        cors_env = cors_env.replace('\\"', '"')
+        
+        # Intentar parsear como JSON
         if cors_env.strip().startswith("["):
             CORS_ORIGINS = json.loads(cors_env)
         else:
             CORS_ORIGINS = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
-    except json.JSONDecodeError:
+            
+        print(f"📝 CORS_ORIGINS cargados: {CORS_ORIGINS}")
+        
+    except json.JSONDecodeError as e:
         print(f"⚠️ Error parseando CORS_ORIGINS: {cors_env}")
+        print(f"⚠️ Error detallado: {str(e)}")
         CORS_ORIGINS = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
 
     if not CORS_ORIGINS:
@@ -28,7 +36,6 @@ def setup_cors():
             processed_origins = ["*"]
             break
         elif origin.startswith("*."):
-            # Convertir *.domain.com a regex pattern
             domain = origin.replace("*.", "").replace(".", r"\.")
             allow_origin_regex = rf"https://[^.]+\.{domain}"
         else:

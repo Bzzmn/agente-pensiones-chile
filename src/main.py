@@ -13,12 +13,25 @@ from dotenv import load_dotenv
 from src.middlewares.cors import CORSMiddlewareWithErrorHandling
 from src.middlewares.host import validate_host
 from src.config.cors import setup_cors
+from src.version import get_version_info
+from src.config.llm_setup import setup_llm
 
 # Cargar variables de entorno
 load_dotenv()
 
-# Inicializar FastAPI
-app = FastAPI()
+# Obtener información de versión
+version_info = get_version_info()
+
+# Inicializar FastAPI con metadata
+app = FastAPI(
+    title="Agente de Pensiones API",
+    description="API del Asistente Virtual de Pensiones",
+    version=version_info["version"]
+)
+
+# Configurar logging con versión
+print(f"\n🚀 Iniciando {version_info['name']} v{version_info['version']}")
+print(f"📝 {version_info['description']}\n")
 
 # Configurar CORS
 processed_origins, allow_origin_regex = setup_cors()
@@ -51,21 +64,14 @@ class ChatRequest(BaseModel):
 print("\n🔧 Inicializando componentes...")
 
 # Configurar el modelo de lenguaje
-llm = ChatOpenAI(
-        model=os.getenv("OPENAI_MODEL"),
-        temperature=0.2,
-        base_url=os.getenv("OPENAI_BASE_URL"),
-        api_key=os.getenv("OPENAI_API_KEY")
-)
-
-print(f"Modelo LLM: {llm.model_name}")
+llm = setup_llm()
 
 # Configurar el vector store
 vectorstore = setup_pinecone()
-retriever = vectorstore.as_retriever(
-    # search_type="similarity",
-    # search_kwargs={"k": 3}
-)
+retriever = vectorstore.as_retriever()
+
+print("\n✨ Todos los componentes inicializados correctamente")
+print("🚀 API lista para recibir peticiones\n")
 
 @app.get("/")
 async def read_root():
@@ -106,6 +112,10 @@ async def chat(request: ChatRequest):
         print(f"Tipo de error: {type(e)}")
         print(f"Resultado recibido: {result if 'result' in locals() else 'No hay resultado'}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/version")
+async def get_version():
+    return version_info
 
 if __name__ == "__main__":
     import uvicorn
