@@ -11,6 +11,16 @@ class TimeInfo(TypedDict):
     timezone: str
     formatted_date: str
 
+class EdadData(TypedDict):
+    anos: int
+    meses: int
+
+class UserData(TypedDict):
+    nombre: str
+    genero: str
+    edad: EdadData
+    nivelEstudios: str
+
 class AgentState(TypedDict):
     messages: Sequence[BaseMessage]
     context: str | None
@@ -19,6 +29,7 @@ class AgentState(TypedDict):
     time_info: TimeInfo | None
     sources: list[str] | None
     agent_name: str | None
+    user_data: UserData | None
 
 def get_formatted_time() -> TimeInfo:
     """Obtiene la información de tiempo formateada"""
@@ -35,6 +46,15 @@ def print_state(state: Dict[str, Any]) -> None:
     """Imprime el estado actual del grafo de manera formateada"""
     print("\n" + "="*50)
     print("🔄 Estado actual del grafo:")
+    
+    # Imprimir datos del usuario
+    if "user_data" in state:
+        print("\n👤 Datos del usuario:")
+        user_data = state["user_data"]
+        print(f"  - Nombre: {user_data.get('nombre', 'No especificado')}")
+        print(f"  - Género: {user_data.get('genero', 'No especificado')}")
+        print(f"  - Edad: {user_data.get('edad', {}).get('anos', 'No especificada')} años")
+        print(f"  - Nivel de estudios: {user_data.get('nivelEstudios', 'No especificado')}")
     
     # Imprimir mensajes
     if "messages" in state:
@@ -137,6 +157,12 @@ def create_retrieval_chain(retriever: BaseRetriever):
 def create_response_chain(llm: ChatOpenAI):
     context_template = """Eres {agent_name}, una asistente virtual con expertiz en temas previsionales.
     
+    Información del usuario:
+    - Nombre: {user_name}
+    - Género: {user_gender}
+    - Edad: {user_age} años
+    - Nivel de estudios: {user_education}
+    
     Información temporal actual:
     - Fecha: {date}
     - Hora: {time}
@@ -156,7 +182,7 @@ def create_response_chain(llm: ChatOpenAI):
     Instrucciones especiales:
         - No debes inventar información, solo debes usar el contexto y las referencias.
         - No debes realizar calculos financieros, solo debes dar una explicacion general.
-        - Si el usuario te pide un calculo de pension indica que puede ocupar la calculadora de pesiones y presionando recalcular puede volver a calcular.
+        - Si el usuario te pide un calculo de pension indica que puede ocupar la calculadora de pesiones disponible en la pagina principal.
     
     Instrucciones de formato y estilo:
         1. Extensión
@@ -197,12 +223,18 @@ def create_response_chain(llm: ChatOpenAI):
     
     simple_template = """Eres un asistente experto en temas previsionales.
     Tu genero esta determinado por tu nombre {agent_name}.
+
+    Información del usuario:
+        - Nombre: {user_name}
+        - Género: {user_gender}
+        - Edad: {user_age} años
+        - Nivel de estudios: {user_education}
     
     Información temporal actual:
-    - Fecha: {date}
-    - Hora: {time}
-    - Zona horaria: {timezone}
-    
+        - Fecha: {date}
+        - Hora: {time}
+        - Zona horaria: {timezone}
+        
     Historial de la conversación:
     {chat_history}
 
@@ -210,9 +242,9 @@ def create_response_chain(llm: ChatOpenAI):
     - No debes responder preguntas que no estén relacionadas con los temas previsionales.
     - No puedes realizar asesoria financiera especifica, si el usuario te lo solicita, da consejos generales relacionados con el tema previsional.
     - No debes realizar calculos financieros, solo debes dar una explicacion general.
-    - Si el usuario te pide un calculo de pension indica que puede ocupar nuestra calculadora de pesiones disponible en la pagina principal, presionando recalcular puede volver a ingrear los datos. No debes dar mas explicaciones.
+    - Si el usuario te pide un calculo de pension indica que puede ocupar la calculadora de pesiones disponible en la pagina principal.
     
-    Responde de manera cordial y concisa al siguiente mensaje: {question}
+    Responde de manera cordial, amable, precisa y concisa al siguiente mensaje: {question}
     """
     
     def generate_response(state: AgentState) -> AgentState:
@@ -221,14 +253,20 @@ def create_response_chain(llm: ChatOpenAI):
         
         question = state["messages"][-1].content
         chat_history = state.get("chat_history", "No hay historial previo.")
-        
-        # Obtener información temporal actual
         time_info = get_formatted_time()
         
-        # Si hay contexto y fuentes
+        # Obtener datos del usuario
+        user_data = state.get("user_data", {})
+        user_age = user_data.get("edad", {}).get("anos", "No especificada")
+        
+        # Si hay contexto y fuentes, usar template completo
         if state.get("context") and state.get("sources"):
             response = llm.invoke(context_template.format(
                 agent_name=state.get("agent_name"),
+                user_name=user_data.get("nombre", "Usuario"),
+                user_gender=user_data.get("genero", "No especificado"),
+                user_age=user_age,
+                user_education=user_data.get("nivelEstudios", "No especificado"),
                 date=time_info["formatted_date"],
                 time=time_info["current_time"],
                 timezone=time_info["timezone"],
@@ -246,6 +284,10 @@ def create_response_chain(llm: ChatOpenAI):
         else:
             response = llm.invoke(simple_template.format(
                 agent_name=state.get("agent_name"),
+                user_name=user_data.get("nombre", "Usuario"),
+                user_gender=user_data.get("genero", "No especificado"),
+                user_age=user_age,
+                user_education=user_data.get("nivelEstudios", "No especificado"),
                 date=time_info["formatted_date"],
                 time=time_info["current_time"],
                 timezone=time_info["timezone"],

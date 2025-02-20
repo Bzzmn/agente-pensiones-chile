@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from src.config.pinecone_setup import setup_pinecone
 from src.config.memory import get_memory
@@ -54,11 +54,22 @@ if "*" not in processed_origins:
     app.middleware("http")(validate_host)
 
 # Modelo para la solicitud
+class EdadData(BaseModel):
+    anos: int
+    meses: int
+
+class UserData(BaseModel):
+    nombre: str
+    genero: str
+    edad: EdadData
+    nivelEstudios: str
+
 class ChatRequest(BaseModel):
     session_id: str
     user_message: str
     message_type: str
     agent_name: str
+    user_data: UserData
 
 # Inicializar componentes globales
 print("\n🔧 Inicializando componentes...")
@@ -86,10 +97,16 @@ async def chat(request: ChatRequest):
         # Crear el grafo del agente para esta sesión
         agent = await create_agent_graph(retriever, llm, memory)
         
-        # Crear el estado inicial con el mensaje del usuario
+        # Crear el estado inicial con el mensaje del usuario y sus datos
         initial_state = {
             "messages": [HumanMessage(content=request.user_message)],
-            "agent_name": request.agent_name  # Pasamos el nombre del agente en el estado
+            "agent_name": request.agent_name,
+            "user_data": {
+                "nombre": request.user_data.nombre,
+                "genero": request.user_data.genero,
+                "edad": request.user_data.edad.dict(),
+                "nivelEstudios": request.user_data.nivelEstudios
+            }
         }
         
         # Ejecutar el agente
